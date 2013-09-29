@@ -119,10 +119,10 @@ class MainMenuController
     @view  = new MainMenuView(this, @app.stage)
     @stack = []
     @view.show =>
+      @app.sound.playMusic('chipho')
       @setupKeyHandlers()
       @view.showImage(@model.selected().img)
-      @view.transitionToMenu @model.menu, 'next', =>
-        @app.sound.playMusic('chipho')
+      @view.transitionToMenu @model.menu, 'next'
 
   run: =>
 
