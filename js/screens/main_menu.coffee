@@ -84,8 +84,16 @@ Menus =
 
   mapselect:
     title: 'Change Map'
+    initialSelection: (data) ->
+      if !data then 0
+      else if data.map == 'warp' then 0
+      else if data.map == 'walled' then 1
+      else if data.map == 'obstacles' then 2
+      else 0
     options: [
-      text: 'Normal', img: 'map_normal', go: 'back'
+      { text: 'Warp', img: 'map_warp', modify: { map: 'warp' }, go: 'back' }
+      { text: 'Walled', img: 'map_walled', modify: { map: 'walled' }, go: 'back' }
+      { text: 'Obstacles', img: 'map_obstacles', modify: { map: 'obstacles' }, go: 'back' }
     ]
 
 class Menu
@@ -113,6 +121,7 @@ class MainMenuController
     @data =
       players: 1
       mode: 'classic'
+      map: 'warp'
       speed: 'cobra'
 
     @model = new Menu(Menus.main, @data)
