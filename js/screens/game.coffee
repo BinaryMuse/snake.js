@@ -67,6 +67,8 @@ class Snake
   @RIGHT = new Vector2(1, 0)
 
   constructor: (initialHead, initialDirection, totalLength, @map) ->
+    @dead = false
+    @growAmount = 0
     @tiles = [initialHead]
     @direction = initialDirection
     @nextDirection = initialDirection
@@ -79,32 +81,44 @@ class Snake
       for i in [2..totalLength]
         @tiles.push(_.last(@tiles).add(oppositeDir))
 
+  nextHead: =>
+    _.first(@tiles).add(@nextDirection)
+
+  grow: (amount) =>
+    @growAmount += amount
+
   move: =>
-    head = _.first(@tiles)
-    newHead = head.add(@nextDirection)
+    return if @dead
+
+    newHead = @nextHead()
     newHead.x = @width - 1  if newHead.x < 0
     newHead.x = 0           if newHead.x >= @width
     newHead.y = @height - 1 if newHead.y < 0
-    newHead.y = 0           if newHead.y > @height
+    newHead.y = 0           if newHead.y >= @height
 
     @tiles.unshift(newHead)
-    @tiles.pop()
+    if @growAmount > 0
+      @growAmount--
+    else
+      @tiles.pop()
     @direction = @nextDirection
 
   changeDir: (dir) =>
     if dir.equals(Snake.UP)
       @nextDirection = dir unless @direction.equals(Snake.DOWN)
-    if dir.equals(Snake.DOWN)
+    else if dir.equals(Snake.DOWN)
       @nextDirection = dir unless @direction.equals(Snake.UP)
-    if dir.equals(Snake.LEFT)
+    else if dir.equals(Snake.LEFT)
       @nextDirection = dir unless @direction.equals(Snake.RIGHT)
-    if dir.equals(Snake.RIGHT)
+    else if dir.equals(Snake.RIGHT)
       @nextDirection = dir unless @direction.equals(Snake.LEFT)
 
 class Game
   constructor: (@options) ->
+    window.g = this
     @paused = true
     @tickCallbacks = []
+    @food = []
 
     @map    = Maps[@options.map]
     @mapTiles = @map.split("\n").map((line) -> line.split(""))
@@ -131,6 +145,36 @@ class Game
     @timer = setInterval @_doTick, time
     @_doTickNoMove()
 
+  allTiles: =>
+    return @_memoAllTiles if @_memoAllTiles?
+
+    tiles = []
+    for x in [0...@width]
+      for y in [0...@height]
+        tiles.push(new Vector2(x, y))
+    @_memoAllTiles = tiles
+
+  occupiedTiles: =>
+    @solidTiles().concat(@food)
+
+  unoccupiedTiles: =>
+    _.filter(@allTiles(), (t) => !_.any(@occupiedTiles(), t.equals, t))
+
+  solidTiles: =>
+    @snakeTiles().concat(@walls())
+
+  snakeTiles: =>
+    _.flatten(_.map(@snakes, 'tiles'))
+
+  walls: =>
+    return @_memoWalls if @_memoWalls?
+
+    walls = []
+    for row, y in @mapTiles
+      for col, x in row
+        walls.push(new Vector2(x, y)) if col == 'X'
+    @_memoWalls = walls
+
   _doTick: =>
     @tick?()
     cb() for cb in @tickCallbacks
@@ -141,7 +185,6 @@ class Game
 
 class ClassicGame extends Game
   generateSnakes: =>
-    console.log @options
     if @options.players == 1
       @snakes = [new Snake(
         new Vector2(0, Math.floor(@height / 2)), new Vector2(1, 0), 3, @mapTiles
@@ -154,9 +197,31 @@ class ClassicGame extends Game
         new Vector2(-1, 0), 3, @mapTiles
       )]
 
+  generateFood: =>
+    return if @food.length > 0
+
+    tiles = @unoccupiedTiles()
+    newFoodTile = tiles[Math.floor(Math.random() * tiles.length)]
+    @food.push(newFoodTile)
+
   tick: (move = true) =>
     if move
-      snake.move() for snake in @snakes
+      for snake in @snakes
+        head = snake.nextHead()
+        snake.dead = true if _.any(@solidTiles(), head.equals, head)
+        snake.move()
+
+    snakeIsEatingFood = (snake) =>
+      head = snake.tiles[0]
+      _.any(@food, head.equals, head)
+    snakesToGrow = _.filter(@snakes, snakeIsEatingFood)
+    snake.grow(3) for snake in snakesToGrow
+
+    console.log "A snake is growing!", snakesToGrow if snakesToGrow.length
+
+    allSnakeHeads = _.map(@snakes, (s) -> s.tiles[0])
+    @food = _.filter(@food, (f) -> !_.any(allSnakeHeads, f.equals, f))
+    @generateFood()
 
 class GameController
   constructor: (@app, @options) ->
@@ -190,7 +255,6 @@ class GameController
       when 27 then @unpause()
 
   handleGameKey: (evt) =>
-    console.log evt.keyCode
     switch evt.keyCode
       when 37 then @p1dir(Snake.LEFT)
       when 38 then @p1dir(Snake.UP)
@@ -219,7 +283,7 @@ class GameView extends View
     width  = @controller.game.width
     height = @controller.game.height
 
-    @grid = new GameGrid(@controller.game.mapTiles, @controller.game.snakes)
+    @grid = new GameGrid(@controller.game)
     @grid.regX = width * 20 / 2
     @grid.x = 450
     @grid.y = 0
@@ -259,3 +323,4 @@ class GameView extends View
 
   tick: =>
     @grid.redrawSnakes()
+    @grid.redrawFood()

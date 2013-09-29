@@ -1,19 +1,20 @@
 class GameGrid extends createjs.Container
-  constructor: (@map, @snakes) ->
-    @height = @map.length
-    @width  = @map[0].length
+  constructor: (@game) ->
+    @height = @game.mapTiles.length
+    @width  = @game.mapTiles[0].length
     @initialize()
 
   initialize: =>
     super
-    @snakeContainers = @snakes.map(=> new createjs.Container())
+    @snakeContainers = @game.snakes.map(=> new createjs.Container())
+    @foodContainer = new createjs.Container()
 
     # n = new createjs.Shape()
     # n.graphics.beginFill('red').beginStroke('red')
     #   .drawRect(0, 0, 1000, 1000)
     # @addChild n
 
-    for row, i in @map
+    for row, i in @game.mapTiles
       for col, j in row
         square = new createjs.Shape()
         graphics = square.graphics
@@ -27,13 +28,16 @@ class GameGrid extends createjs.Container
     @border = new createjs.Shape()
     @border.graphics.beginStroke("#000")
       .drawRect(0, 0, 20 * @width, 20 * @height)
-    @addChild @border
 
     for cont in @snakeContainers
       @addChild cont
 
+    @addChild @foodContainer
+    @addChild @border
+
   redrawSnakes: =>
-    snakesAndContainers = _.zip(@snakes, @snakeContainers)
+    snakes = @game.snakes
+    snakesAndContainers = _.zip(snakes, @snakeContainers)
     for [snake, cont] in snakesAndContainers
       cont.removeAllChildren()
       for tile in snake.tiles
@@ -43,3 +47,13 @@ class GameGrid extends createjs.Container
         square.x = tile.x * 20
         square.y = tile.y * 20
         cont.addChild square
+
+  redrawFood: =>
+    @foodContainer.removeAllChildren()
+    for food in @game.food
+      square = new createjs.Shape()
+      square.graphics.beginFill('red').beginStroke('red')
+        .drawRect(0, 0, 20, 20)
+      square.x = food.x * 20
+      square.y = food.y * 20
+      @foodContainer.addChild square
