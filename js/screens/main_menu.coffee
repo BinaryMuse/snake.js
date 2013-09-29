@@ -1,6 +1,7 @@
 Menus =
   main:
     options: [
+      { text: 'DEBUG', img: 'title', action: 'startgame' }
       { text: 'Play 1 Player', img: 'title', modify: { players: 1 }, menu: '>1p' }
       { text: 'Play 2 Player', img: 'title', modify: { players: 2 }, menu: '>2p' }
       { text: 'High Scores',   img: 'title', action: 'showscores' }
