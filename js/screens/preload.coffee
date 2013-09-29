@@ -11,9 +11,6 @@ class PreloadScreen
       { id: "sound.beep",         src: "assets/sounds/beep.wav" }
       { id: "sound.next",         src: "assets/sounds/next.wav" }
       { id: "sound.squeak",       src: "assets/sounds/squeak.wav" }
-      { id: "sound.death",        src: "assets/sounds/death1.wav" }
-      { id: "sound.power1",       src: "assets/sounds/powerup1.wav" }
-      { id: "sound.power2",       src: "assets/sounds/powerup2.wav" }
     ]
 
   load: =>
