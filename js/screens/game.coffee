@@ -302,7 +302,7 @@ class GameView extends View
     mask.graphics.beginFill("#000").beginStroke("#000")
       .drawRect(0, 0, 20 * width, 20 * height + 0.5)
     @grid.mask = mask
-    mask.x = @grid.regX / 2
+    mask.x = @grid.x - @grid.regX
     mask.y = -0.5
     window.m = mask
     window.t = this
